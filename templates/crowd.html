@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crowd Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .navbar {
+            background-color: #333;
+            padding: 1rem;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-item {
+            display: inline-block;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-link:hover {
+            background-color: #555;
+        }
+
+        .nav-link.active {
+            background-color: #4CAF50;
+        }
+
+        .crowd-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .video-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .stats-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #crowdVideo {
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        .upload-form {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .progress {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #4CAF50;
+            width: 0;
+            transition: width 0.3s;
+        }
+
+        .stat-value {
+            font-weight: bold;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .chart-wrapper {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/charts.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <i>🎥</i> Accident Detection
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/dashboard" class="nav-link">
+                    <i>📺</i> Multi-Camera View
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/crowd" class="nav-link active">
+                    <i>👥</i> Crowd Detection
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <h1>Crowd Detection System</h1>
+
+    <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="video" accept="video/*" required>
+        <button type="submit">Analyze Crowd</button>
+    </form>
+
+    <div class="crowd-container">
+        <div class="video-section">
+            <h2>Live Feed</h2>
+            <video id="crowdVideo" width="100%" controls></video>
+            <div id="progressBar" class="progress">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <h2>Crowd Statistics</h2>
+            <div class="stat-card">
+                <h3>Current Count</h3>
+                <p id="currentCount" class="stat-value">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>Peak Count</h3>
+                <p id="peakCount" class="stat-value">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>Average Count</h3>
+                <p id="averageCount" class="stat-value">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>Density Level</h3>
+                <p id="densityLevel" class="stat-value">-</p>
+            </div>
+            <canvas id="countChart"></canvas>
+        </div>
+    </div>
+
+    <main>
+        <div class="video-container">
+            <!-- Existing video container code -->
+        </div>
+        
+        <div class="charts-container">
+            <div class="chart-card">
+                <div class="chart-wrapper">
+                    <canvas id="crowdChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-wrapper">
+                    <canvas id="hourlyStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function registerVideo(videoUrl) {
+            try {
+                await fetch('/register_video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        camera_id: 'cam2',
+                        video_url: videoUrl
+                    })
+                });
+            } catch (error) {
+                console.error('Error registering video:', error);
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            const video = document.getElementById('crowdVideo');
+            const progressBar = document.querySelector('.progress-bar');
+            const submitButton = e.target.querySelector('button');
+            
+            progressBar.style.width = '0%';
+            submitButton.disabled = true;
+            submitButton.textContent = 'Processing...';
+            
+            // Update initial stats to show processing
+            updateStats({
+                current_count: 'Processing...',
+                peak_count: 'Processing...',
+                average_count: 'Processing...',
+                density_level: 'Processing...'
+            });
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/analyze_crowd', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to process video');
+                }
+                
+                const data = await response.json();
+                console.log('Received data:', data);  // Debug log
+                
+                // Update video player
+                if (data.video_url) {
+                    video.src = data.video_url;
+                    video.style.display = 'block';
+                    
+                    // Register video for multi-camera view
+                    await registerVideo(data.video_url);
+                }
+                
+                if (data.stats_history && data.stats_history.length > 0) {
+                    // Initialize with first frame stats
+                    updateStats(data.stats_history[0]);
+                    
+                    // Update stats as video plays
+                    video.addEventListener('timeupdate', () => {
+                        const frameIndex = Math.floor(video.currentTime * 30);  // Assuming 30fps
+                        if (data.stats_history[frameIndex]) {
+                            updateStats(data.stats_history[frameIndex]);
+                            progressBar.style.width = `${(video.currentTime / video.duration) * 100}%`;
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing video: ' + error.message);
+                
+                // Reset stats on error
+                updateStats({
+                    current_count: 'Error',
+                    peak_count: 'Error',
+                    average_count: 'Error',
+                    density_level: 'Error'
+                });
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Analyze Crowd';
+            }
+        });
+
+        function updateStats(stats) {
+            document.getElementById('currentCount').textContent = 
+                typeof stats.current_count === 'number' ? `${stats.current_count} people` : stats.current_count;
+            
+            document.getElementById('peakCount').textContent = 
+                typeof stats.peak_count === 'number' ? `${stats.peak_count} people` : stats.peak_count;
+            
+            document.getElementById('averageCount').textContent = 
+                typeof stats.average_count === 'number' ? `${stats.average_count} people` : stats.average_count;
+            
+            const densityLevel = document.getElementById('densityLevel');
+            densityLevel.textContent = stats.density_level;
+            
+            // Color-code density level
+            const colors = {
+                'Normal': '#4CAF50',
+                'Moderate': '#FFC107',
+                'High': '#FF9800',
+                'Very High': '#F44336',
+                'Processing...': '#666',
+                'Error': '#f44336'
+            };
+            densityLevel.style.color = colors[stats.density_level] || '#4CAF50';
+        }
+
+        // Initialize charts with mock data (replace with real data from backend)
+        const crowdData = {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            density: Array.from({length: 24}, () => Math.floor(Math.random() * 100))
+        };
+
+        const hourlyStatsData = {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            accidents: Array.from({length: 24}, () => Math.floor(Math.random() * 5)),
+            crowdDensity: Array.from({length: 24}, () => Math.floor(Math.random() * 100))
+        };
+
+        // Create charts
+        const crowdChart = createCrowdChart(
+            document.getElementById('crowdChart'),
+            crowdData
+        );
+
+        const hourlyStatsChart = createHourlyStatsChart(
+            document.getElementById('hourlyStatsChart'),
+            hourlyStatsData
+        );
+
+        // Update charts with real-time data from WebSocket
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'crowd') {
+                updateCrowdChart(data);
+            } else if (data.type === 'stats') {
+                updateHourlyStats(data);
+            }
+        };
+
+        function updateCrowdChart(data) {
+            // Remove first element and add new data point
+            crowdChart.data.datasets[0].data.shift();
+            crowdChart.data.datasets[0].data.push(data.density);
+            crowdChart.update();
+        }
+
+        function updateHourlyStats(data) {
+            hourlyStatsChart.data.datasets[0].data = data.accidents;
+            hourlyStatsChart.data.datasets[1].data = data.crowdDensity;
+            hourlyStatsChart.update();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Traffic Accident Detection System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    
+    /* Base Reset & Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      transition: background 0.3s ease;
+    }
+    
+    /* Header */
+    header {
+      background: linear-gradient(to right, #1f4037, #4caf50);
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+      color: white;
+      text-align: center;
+    }
+    
+    header h1 {
+      font-size: 2rem;
+      letter-spacing: 1px;
+    }
+    
+    /* Navbar */
+    .navbar {
+      background-color: #1f1f1f;
+      padding: 1rem 2rem;
+      margin-top: 20px;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .nav-list {
+      list-style: none;
+      display: flex;
+      gap: 25px;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .nav-item {
+      position: relative;
+    }
+    
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      transition: background-color 0.3s, transform 0.2s ease;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+    
+    .nav-link i {
+      margin-right: 8px;
+      transition: transform 0.3s ease;
+    }
+    
+    .nav-link:hover {
+      background-color: #333;
+      transform: translateY(-2px);
+    }
+    
+    .nav-link:hover i {
+      transform: scale(1.2);
+    }
+    
+    .nav-link.active {
+      background-color: #4CAF50;
+    }
+    
+    /* Alert Messages */
+    .alert {
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: none;
+      font-weight: bold;
+      animation: popIn 0.3s ease forwards;
+    }
+    
+    .alert.danger {
+      background-color: #f44336;
+      color: white;
+    }
+    
+    .alert.warning {
+      background-color: #ff9800;
+      color: white;
+    }
+    
+    @keyframes popIn {
+      0% {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    /* Container Layout */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 20px;
+    }
+    
+    .video-container,
+    .data-container {
+      padding: 24px;
+      border-radius: 12px;
+      background-color: #ffffff;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    
+    .video-container:hover,
+    .data-container:hover {
+      transform: translateY(-5px);
+    }
+    
+    /* Loader */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      font-size: 1.2rem;
+    }
+    
+    /* Stats Section */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .stat-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+      text-align: center;
+    }
+    
+    .stat-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Buttons */
+    button {
+      padding: 12px 24px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    
+    button:hover {
+      background-color: #45a049;
+      transform: scale(1.05);
+    }
+    
+    button:active {
+      transform: scale(0.95);
+    }
+    
+    /* Footer */
+    footer {
+      background-color: #1f1f1f;
+      color: white;
+      padding: 1.5rem;
+      text-align: center;
+      border-radius: 12px;
+      margin-top: 40px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+      font-size: 0.95rem;
+    }
+    
+    footer a {
+      color: #4CAF50;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    footer a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Cursor pointer enhancement */
+    .nav-link,
+    .stat-card,
+    button {
+      cursor: pointer;
+    }
+    
+    /* Responsive Tuning */
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    
+      .nav-list {
+        flex-direction: column;
+        gap: 15px;
+      }
+    
+      .stats {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    
+  </style>
+
+  
+  <audio id="sirenSound" preload="auto">
+    <source src="/static/audio/siren.mp3" type="audio/mpeg">
+  </audio>
+</head>
+<body>
+  <nav class="navbar">
+    <ul class="nav-list">
+      <li class="nav-item">
+        <a href="/" class="nav-link active">
+          <i>🎥</i> Accident Detection
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/dashboard" class="nav-link">
+          <i>📺</i> Multi-Camera View
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/crowd" class="nav-link">
+          <i>👥</i> Crowd Detection
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <h1>Traffic Accident Detection System</h1>
+  
+  <div id="accidentAlert" class="alert danger">
+    <strong>⚠️ ACCIDENT DETECTED!</strong>
+    <p id="accidentDetails"></p>
+  </div>
+
+  <div id="speedingAlert" class="alert warning">
+    <strong>⚡ Speeding Vehicles Detected!</strong>
+    <p id="speedingDetails"></p>
+  </div>
+
+  <form id="uploadForm" enctype="multipart/form-data" method="post" action="/upload">
+    <input type="file" name="video" accept="video/*" required />
+    <button type="submit">Analyze Video</button>
+  </form>
+
+  <div id="loading" class="loading">
+    <h3>Analyzing video...</h3>
+    <p>Please wait while we process your video</p>
+  </div>
+
+  <div class="container">
+    <div class="video-container">
+      <h2>Video Analysis</h2>
+      <video id="processedVideo" width="100%" controls style="display:none;"></video>
+    </div>
+
+    <div class="data-container">
+      <h2>Analysis Results</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <h3>Accident Status</h3>
+          <p id="accidentStatus">No accidents detected</p>
+          <p id="accidentConfidence" style="font-size: 0.9em; color: #666;"></p>
+        </div>
+        <div class="stat-card">
+          <h3>Vehicles Tracked</h3>
+          <p id="vehicleCount">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Speeding Vehicles</h3>
+          <p id="speedingCount">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Time of Incident</h3>
+          <p id="incidentTime">N/A</p>
+        </div>
+      </div>
+      <canvas id="speedChart" style="margin-top: 20px;"></canvas>
+    </div>
+  </div>
+  <footer>
+    &copy; 2025 Your Project Name. All rights reserved. |
+    <a href="#">Privacy Policy</a>
+  </footer>
+
+  <script>
+    let speedChart = null;  // Store chart instance
+
+    const form = document.getElementById('uploadForm');
+    const videoPlayer = document.getElementById('processedVideo');
+    const chartCanvas = document.getElementById('speedChart');
+
+    async function registerVideo(videoUrl) {
+        try {
+            await fetch('/register_video', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    camera_id: 'cam1',
+                    video_url: videoUrl
+                })
+            });
+        } catch (error) {
+            console.error('Error registering video:', error);
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const loading = document.getElementById('loading');
+        loading.style.display = 'block';
+        
+        try {
+            const res = await fetch('/upload', {
+                method: 'POST',
+                body: formData, 
+            });
+            
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.error || `HTTP error! status: ${res.status}`);
+            }
+
+            // Update analysis results
+            updateAnalysisResults(data.analysis_report);
+
+            // Handle video display
+            if (data.processed_video_url) {
+                const videoUrl = `${data.processed_video_url}?t=${Date.now()}`;
+                videoPlayer.src = videoUrl;
+                videoPlayer.style.display = 'block';
+                videoPlayer.load();
+                
+                // Register video for multi-camera view
+                await registerVideo(videoUrl);
+            }
+
+            // Load speed chart
+            await loadChart();
+            
+        } catch (err) {
+            console.error('Upload error:', err);
+            document.getElementById('accidentStatus').textContent = 'Error: ' + err.message;
+            document.getElementById('accidentStatus').style.color = 'red';
+        } finally {
+            loading.style.display = 'none';
+        }
+    });
+
+    function playAlertSounds(timestamp) {
+        // Play siren sound
+        const siren = document.getElementById('sirenSound');
+        siren.play();
+        
+        // Create speech message
+        const time = new Date().toLocaleTimeString();
+        const message = `Accident detected on Camera 1 at ${time}`;
+        
+        // Use speech synthesis
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        speechSynthesis.speak(utterance);
+    }
+
+    function updateAnalysisResults(report) {
+        // Update accident status
+        const accidentStatus = document.getElementById('accidentStatus');
+        const accidentConfidence = document.getElementById('accidentConfidence');
+        const accidentAlert = document.getElementById('accidentAlert');
+        const accidentDetails = document.getElementById('accidentDetails');
+        
+        if (report.accident_detected) {
+            accidentStatus.textContent = '🚨 ACCIDENT DETECTED';
+            accidentStatus.style.color = 'red';
+            accidentConfidence.textContent = `Confidence: ${(report.accident_confidence * 100).toFixed(1)}%`;
+            
+            // Format time nicely
+            const time = report.timestamp.toFixed(2);
+            document.getElementById('incidentTime').textContent = `${time} seconds`;
+            
+            // Show accident alert with details
+            accidentDetails.innerHTML = `
+                <strong>Time of Accident:</strong> ${time} seconds<br>
+                <strong>Confidence:</strong> ${(report.accident_confidence * 100).toFixed(1)}%<br>
+                <strong>Vehicles Involved:</strong> ${report.accident_vehicles.join(', ')}<br>
+            `;
+            accidentAlert.style.display = 'block';
+
+            // Add sound alerts
+            playAlertSounds(report.timestamp);
+        } else {
+            accidentStatus.textContent = '✅ No Accidents Detected';
+            accidentStatus.style.color = 'green';
+            accidentConfidence.textContent = '';
+            accidentAlert.style.display = 'none';
+        }
+
+        // Update vehicle counts
+        document.getElementById('vehicleCount').textContent = report.speed_data.total_vehicles;
+        
+        // Update speeding information
+        const speedingCount = report.speed_data.count_speeding;
+        const speedingAlert = document.getElementById('speedingAlert');
+        const speedingDetails = document.getElementById('speedingDetails');
+        
+        document.getElementById('speedingCount').textContent = speedingCount;
+        
+        if (speedingCount > 0) {
+            const speedingVehicles = Object.entries(report.speed_data.speeding_vehicles)
+                .map(([id, speed]) => `Vehicle ${id} (${speed} km/h)`)
+                .join(', ');
+            
+            speedingDetails.innerHTML = `
+                <strong>Speeding Vehicles:</strong><br>
+                ${speedingVehicles}
+            `;
+            speedingAlert.style.display = 'block';
+        } else {
+            speedingAlert.style.display = 'none';
+        }
+    }
+
+    async function loadChart() {
+        try {
+            const res = await fetch('/speed_data');
+            const data = await res.json();
+            
+            if (speedChart) {
+                speedChart.destroy();
+            }
+            
+            const ctx = chartCanvas.getContext('2d');
+            speedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.timestamps,
+                    datasets: data.objects.map(obj => ({
+                        label: `Vehicle ${obj.id}`,
+                        data: obj.speeds,
+                        borderColor: `hsl(${obj.id * 137.5}deg, 70%, 50%)`,
+                        fill: false,
+                        tension: 0.4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Vehicle Speeds Over Time'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Speed (km/h)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)'
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (err) {
+            console.error('Error loading chart:', err);
+        }
+    }
+  </script>
+</body>
+</html>
